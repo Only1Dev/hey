@@ -1,64 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Delhi Air Quality (OpenAQ)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fafafa;
-      text-align: center;
-      padding: 50px;
-    }
-    #dataBox {
-      font-size: 1.8rem;
-      margin-top: 20px;
-      white-space: pre-line;
-    }
-  </style>
-</head>
+<script>
+async function fetchAQData() {
+  try {
+    const proxyUrl = "https://api.codetabs.com/v1/proxy?quest=";
+    const targetUrl = "https://api.openaq.org/v1/latest?city=Delhi";
+    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+    const data = await response.json();
 
-<body>
-  <h1>Delhi AQI Data (OpenAQ)</h1>
-  <div id="dataBox">Loading data…</div>
-
-  <script>
-    async function fetchAQData() {
-      try {
-        // ❶ This URL gets latest pollutant data for Delhi
-        const url = "https://api.openaq.org/v1/latest?city=Delhi";
-
-        // ❷ Fetch JSON data from OpenAQ API
-        const response = await fetch(url);
-        const data = await response.json();
-
-        // ❸ Check if we got results
-        if (!data.results || data.results.length === 0) {
-          document.getElementById("dataBox").innerText = "No data available";
-          return;
-        }
-
-        // ❹ Pick the first station’s readings
-        const station = data.results[0];
-        const measurements = station.measurements;
-
-        // ❺ Build text showing pollutants
-        let text = "Air Quality Values (Delhi):\n\n";
-        measurements.forEach(m => {
-          text += m.parameter.toUpperCase() + ": " + m.value + " " + m.unit + "\n";
-        });
-
-        // ❻ Show data in webpage
-        document.getElementById("dataBox").innerText = text;
-      } catch (err) {
-        console.error(err);
-        document.getElementById("dataBox").innerText = "Error loading data";
-      }
+    if (!data.results || data.results.length === 0) {
+      document.getElementById("dataBox").innerText = "No data available";
+      return;
     }
 
-    // run the function
-    fetchAQData();
-  </script>
+    const station = data.results[0];
+    const measurements = station.measurements;
 
-</body>
-</html>
+    let text = "Delhi AQI Data:\n";
+    measurements.forEach(m => {
+      text += m.parameter.toUpperCase() + ": " + m.value + " " + m.unit + "\n";
+    });
+
+    document.getElementById("dataBox").innerText = text;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("dataBox").innerText = "Error loading data";
+  }
+}
+
+fetchAQData();
+</script>
