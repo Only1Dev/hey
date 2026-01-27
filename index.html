@@ -1,35 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Delhi AQI Data (OpenAQ)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-      background: #fafafa;
-    }
-    #dataBox {
-      margin-top: 20px;
-      font-size: 1.8rem;
-      white-space: pre-line;
-    }
-  </style>
-</head>
-<body>
-
-<h1>Delhi AQI Data (OpenAQ)</h1>
-<div id="dataBox">Loading data…</div>
-
 <script>
 async function fetchAQData() {
   try {
-    // Using a stable proxy that allows browser fetch
-    const proxy = "https://api.allorigins.win/raw?url=";
-    const target = "https://api.openaq.org/v1/latest?city=Delhi";
-
-    const response = await fetch(proxy + encodeURIComponent(target));
+    const response = await fetch("/api/aqi");
     const data = await response.json();
 
     if (!data.results || data.results.length === 0) {
@@ -37,24 +9,19 @@ async function fetchAQData() {
       return;
     }
 
-    // Pick a station’s measurements
     const measurements = data.results[0].measurements;
 
     let text = "Delhi Air Quality:\n\n";
     measurements.forEach(m => {
-      text += m.parameter.toUpperCase() + ": " + m.value + " " + m.unit + "\n";
+      text += `${m.parameter.toUpperCase()}: ${m.value} ${m.unit}\n`;
     });
 
     document.getElementById("dataBox").innerText = text;
 
-  } catch (error) {
-    console.error("Fetch error:", error);
+  } catch (err) {
     document.getElementById("dataBox").innerText = "Error loading data";
   }
 }
 
 fetchAQData();
 </script>
-
-</body>
-</html>
