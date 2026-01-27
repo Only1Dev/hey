@@ -1,27 +1,12 @@
-<script>
-async function fetchAQData() {
-  try {
-    const response = await fetch("/api/aqi");
-    const data = await response.json();
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Delhi AQI</title>
+</head>
+<body>
 
-    if (!data.results || data.results.length === 0) {
-      document.getElementById("dataBox").innerText = "No data found";
-      return;
-    }
+<h1>Delhi AQI Website</h1>
+<p>If you can see this, frontend is working.</p>
 
-    const measurements = data.results[0].measurements;
-
-    let text = "Delhi Air Quality:\n\n";
-    measurements.forEach(m => {
-      text += `${m.parameter.toUpperCase()}: ${m.value} ${m.unit}\n`;
-    });
-
-    document.getElementById("dataBox").innerText = text;
-
-  } catch (err) {
-    document.getElementById("dataBox").innerText = "Error loading data";
-  }
-}
-
-fetchAQData();
-</script>
+</body>
+</html>
