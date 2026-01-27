@@ -1,23 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Delhi AQI</title>
+  <title>Delhi AQI Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    pre {
+      text-align: left;
+      display: inline-block;
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Delhi AQI Website</h1>
-<pre id="out">Loading...</pre>
+<h1>Delhi AQI Data (OpenAQ)</h1>
+<pre id="output">Loading AQI data...</pre>
 
 <script>
 fetch("/api/aqi")
-  .then(r => r.json())
-  .then(d => {
-    document.getElementById("out").textContent =
-      JSON.stringify(d.results[0].measurements, null, 2);
+  .then(res => res.json())
+  .then(data => {
+    const measurements = data.results[0].measurements;
+
+    let text = "";
+    measurements.forEach(m => {
+      text += `${m.parameter.toUpperCase()}: ${m.value} ${m.unit}\n`;
+    });
+
+    document.getElementById("output").textContent = text;
   })
-  .catch(e => {
-    document.getElementById("out").textContent = "API ERROR";
-    console.error(e);
+  .catch(err => {
+    document.getElementById("output").textContent = "Failed to load AQI data";
+    console.error(err);
   });
 </script>
 
