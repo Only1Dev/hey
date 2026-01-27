@@ -6,10 +6,19 @@
 <body>
 
 <h1>Delhi AQI Website</h1>
-<pre id="out">JS running...</pre>
+<pre id="out">Loading...</pre>
 
 <script>
-document.getElementById("out").textContent = "JavaScript works!";
+fetch("/api/aqi")
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById("out").textContent =
+      JSON.stringify(d.results[0].measurements, null, 2);
+  })
+  .catch(e => {
+    document.getElementById("out").textContent = "API ERROR";
+    console.error(e);
+  });
 </script>
 
 </body>
