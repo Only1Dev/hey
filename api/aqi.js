@@ -1,14 +1,21 @@
-import fetch from "node-fetch";
+export const config = {
+  runtime: "edge",
+};
 
-export default async function handler(req, res) {
+export default async function handler() {
   try {
-    const url = "https://api.openaq.org/v2/latest?city=Delhi";
-
-    const response = await fetch(url);
+    const response = await fetch(
+      "https://api.openaq.org/v2/latest?city=Delhi"
+    );
     const data = await response.json();
 
-    res.status(200).json(data);
+    return new Response(JSON.stringify(data), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Backend fetch failed" });
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch AQI" }),
+      { status: 500 }
+    );
   }
 }
