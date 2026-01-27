@@ -3,20 +3,26 @@ export const config = {
 };
 
 export default async function handler() {
-  const response = await fetch(
-    "https://api.openaq.org/v3/latest?city=Delhi&limit=1",
-    {
-      headers: {
-        "X-API-Key": "7a5a924eaabd15ed6f1545e43255f89ae61a0b7fdc96ca770715da7b64515fc7"
-      }
-    }
-  );
+  const url =
+    "https://api.openaq.org/v3/measurements?country=IN&city=Delhi&limit=10";
+
+  const response = await fetch(url, {
+    headers: {
+      "X-API-Key": process.env.OPENAQ_API_KEY,
+      "accept": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    return new Response(
+      JSON.stringify({ error: "OpenAQ request failed" }),
+      { status: 500 }
+    );
+  }
 
   const data = await response.json();
 
   return new Response(JSON.stringify(data), {
-    headers: {
-      "Content-Type": "application/json"
-    }
+    headers: { "Content-Type": "application/json" },
   });
 }
