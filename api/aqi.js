@@ -1,3 +1,5 @@
+import fetch from "node-fetch";
+
 export default async function handler(req, res) {
   try {
     const url = "https://api.openaq.org/v2/latest?city=Delhi";
@@ -5,10 +7,8 @@ export default async function handler(req, res) {
     const response = await fetch(url);
     const data = await response.json();
 
-    res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json(data);
-
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch AQI data" });
+    res.status(500).json({ error: "Backend fetch failed" });
   }
 }
