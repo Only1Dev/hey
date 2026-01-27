@@ -13,7 +13,8 @@
       display: inline-block;
       background: #f4f4f4;
       padding: 15px;
-      border-radius: 5px;
+      border-radius: 6px;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -26,17 +27,22 @@
 fetch("/api/aqi")
   .then(res => res.json())
   .then(data => {
-    const measurements = data.results[0].measurements;
+    if (!data.results || data.results.length === 0) {
+      document.getElementById("output").textContent =
+        "No AQI data available";
+      return;
+    }
 
     let text = "";
-    measurements.forEach(m => {
-      text += `${m.parameter.toUpperCase()}: ${m.value} ${m.unit}\n`;
+    data.results.forEach(r => {
+      text += `${r.parameter.toUpperCase()}: ${r.value} ${r.unit}\n`;
     });
 
     document.getElementById("output").textContent = text;
   })
   .catch(err => {
-    document.getElementById("output").textContent = "Failed to load AQI data";
+    document.getElementById("output").textContent =
+      "Failed to load AQI data";
     console.error(err);
   });
 </script>
