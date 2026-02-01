@@ -2,112 +2,157 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Delhi AQI Replica - Final Fix</title>
+  <title>Delhi AQI Strategy Sandbox - Final</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
     body, html, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
     #ui {
       position: absolute; top: 20px; left: 20px; z-index: 10;
-      background: rgba(10, 10, 15, 0.95); color: #fff;
-      padding: 20px; border-radius: 12px; width: 300px;
+      background: rgba(15, 15, 25, 0.95); color: #fff;
+      padding: 20px; border-radius: 12px; width: 320px;
       font-family: 'Segoe UI', sans-serif; border: 1px solid #444;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .aqi-val { font-size: 44px; font-weight: 900; }
-    #aqiStatus { font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; margin-left: 10px; }
+    .aqi-card { text-align: center; padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.05); margin-bottom: 20px; }
+    #aqiNum { font-size: 58px; font-weight: 900; line-height: 1; }
+    #aqiTag { font-size: 13px; font-weight: bold; text-transform: uppercase; margin-top: 5px; }
+    
+    .section { margin-bottom: 18px; }
+    .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
     input[type=range] { width: 100%; accent-color: #ff5722; cursor: pointer; }
-    .label { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 15px; display: block; }
-    .checkbox-group { margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; font-size: 13px; color: #ccc; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn { 
+      background: #222; border: 1px solid #444; color: #ccc; 
+      padding: 8px; border-radius: 5px; font-size: 11px; 
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+    }
+    .btn:has(input:checked) { border-color: #ff5722; color: #fff; background: rgba(255, 87, 34, 0.1); }
+    .warning { font-size: 11px; color: #ff5722; border-top: 1px solid #333; padding-top: 10px; margin-top: 10px; }
   </style>
 </head>
 <body>
 
   <div id="ui">
-    <div style="display:flex; align-items:center;">
-      <span class="aqi-val" id="aqiNum">150</span>
-      <span id="aqiStatus" style="background:#ffcc00; color:#000">MODERATE</span>
+    <div class="aqi-card">
+      <div id="aqiNum">300</div>
+      <div id="aqiTag">Very Poor</div>
     </div>
 
-    <label class="label">Simulate Pollution Sources</label>
-    <input type="range" id="eS" min="100" max="1000" value="450">
-    
-    <label class="label">Wind Speed (Dispersion)</label>
-    <input type="range" id="wS" min="2" max="40" value="12">
+    <div class="section">
+      <label class="label">Wind Speed: <span id="windVal">10</span> km/h</label>
+      <input type="range" id="wind" min="2" max="45" value="10">
+    </div>
 
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="ev"> 50% EV Transition (-25%)</label><br>
-      <label><input type="checkbox" id="smog"> Anti-Smog Spraying (-15%)</label><br>
-      <label><input type="checkbox" id="green"> Green Belt Expansion (-10%)</label>
+    <div class="section">
+      <label class="label">Base Emissions Loading</label>
+      <input type="range" id="emissions" min="100" max="2000" value="1000">
+    </div>
+
+    <div class="section">
+      <label class="label">Policy & Physical Interventions</label>
+      <div class="grid">
+        <label class="btn"><input type="checkbox" id="oddEven"> Odd-Even</label>
+        <label class="btn"><input type="checkbox" id="grap3"> GRAP-3</label>
+        <label class="btn"><input type="checkbox" id="grap4"> GRAP-4</label>
+        <label class="btn"><input type="checkbox" id="water"> Sprinklers</label>
+        <label class="btn"><input type="checkbox" id="tower"> Smog Tower</label>
+      </div>
+    </div>
+
+    <div class="warning">
+      Visibility is calculated using Mie scattering logic. Severe levels will obscure ground terrain entirely.
     </div>
   </div>
 
   <div id="cesiumContainer"></div>
 
   <script>
+    // Access Token
     Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3MzI3MGIyZS1jZDEwLTRiOTYtOTJjNS1mZTFlOGVkNDg4NzUiLCJpZCI6Mzg1NzcyLCJpYXQiOjE3Njk5NDc2NTJ9.fvUHQUlAGhWQE_8fClYm3sWd0pnmkD7bKYUjQfrA_5g';
 
     async function start() {
-      try {
-        const viewer = new Cesium.Viewer('cesiumContainer', {
-          terrainProvider: await Cesium.createWorldTerrainAsync(),
-          baseLayerPicker: false, infoBox: false, animation: false, timeline: false
+      const viewer = new Cesium.Viewer('cesiumContainer', {
+        terrainProvider: await Cesium.createWorldTerrainAsync(),
+        baseLayerPicker: false, infoBox: false, animation: false, timeline: false,
+        requestRenderMode: true
+      });
+
+      const buildings = await Cesium.createOsmBuildingsAsync();
+      viewer.scene.primitives.add(buildings);
+
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(77.2167, 28.6315, 600),
+        orientation: { pitch: Cesium.Math.toRadians(-22) }
+      });
+
+      viewer.scene.fog.enabled = true;
+      viewer.scene.globe.showGroundAtmosphere = true;
+
+      const updateSim = () => {
+        const e = parseFloat(document.getElementById('emissions').value);
+        const w = parseFloat(document.getElementById('wind').value);
+        document.getElementById('windVal').innerText = w;
+
+        // Policy Logic (Multipliers)
+        let policyFactor = 1.0;
+        if (document.getElementById('oddEven').checked) policyFactor *= 0.82; // -18% Cars
+        if (document.getElementById('grap3').checked) policyFactor *= 0.75;  // -25% Construction
+        if (document.getElementById('grap4').checked) policyFactor *= 0.65;  // -35% Total lockdown
+        if (document.getElementById('water').checked) policyFactor *= 0.90;  // -10% Dust suppression
+        if (document.getElementById('tower').checked) policyFactor *= 0.96;  // -4% Localized purifiers
+
+        // AQI Box Model: Concentration = Emissions / Wind
+        const aqi = Math.round((e * policyFactor) / (w * 0.22));
+        
+        // UI Updates
+        const aqiEl = document.getElementById('aqiNum');
+        const tagEl = document.getElementById('aqiTag');
+        aqiEl.innerText = aqi;
+
+        let colorHex = '#ffff00';
+        if (aqi > 400) { colorHex = '#7e0023'; tagEl.innerText = 'Severe+'; }
+        else if (aqi > 300) { colorHex = '#ff0000'; tagEl.innerText = 'Severe'; }
+        else if (aqi > 200) { colorHex = '#ff9900'; tagEl.innerText = 'Very Poor'; }
+        else { colorHex = '#ffff00'; tagEl.innerText = 'Moderate/Poor'; }
+        
+        aqiEl.style.color = colorHex;
+        tagEl.style.color = colorHex;
+
+        // EXTREME FOG RENDERING
+        // Doubled density: (aqi / 1000) * 0.012 creates a thick "soup" at 400+ AQI
+        const fogDensity = (aqi / 1000) * 0.012;
+        viewer.scene.fog.density = fogDensity;
+        viewer.scene.fog.visualDensityScalar = 1.0; // Max visual impact
+
+        // Mie Scattering Color: Shifts to Deep Brown in Severe levels
+        const smogColor = aqi > 300 ? '#4b3621' : '#c0b0a0';
+        viewer.scene.fog.color = Cesium.Color.fromCssColorString(smogColor);
+        viewer.scene.skyAtmosphere.hueShift = (aqi / 1200);
+
+        // ROBUST BUILDING STYLE (Fixed Rendering Error)
+        buildings.style = new Cesium.Cesium3DTileStyle({
+          color: {
+            conditions: [
+              // Use Number() to guard against null/string heights
+              ['${height} === undefined || ${height} === null', "color('white', 0.5)"],
+              ['Number(${height}) > 40', `color('${smogColor}', 0.98)`], // Top of buildings hide in fog
+              ['true', `color('white', 0.8)`]
+            ]
+          }
         });
 
-        const buildings = await Cesium.createOsmBuildingsAsync();
-        viewer.scene.primitives.add(buildings);
+        viewer.scene.requestRender();
+      };
 
-        viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(77.2167, 28.6315, 900),
-          orientation: { pitch: Cesium.Math.toRadians(-30) }
-        });
+      // Listener for all inputs
+      document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updateSim);
+      });
 
-        viewer.scene.fog.enabled = true;
-
-        const update = () => {
-          const e = parseFloat(document.getElementById('eS').value);
-          const w = parseFloat(document.getElementById('wS').value);
-          
-          let red = 0;
-          if (document.getElementById('ev').checked) red += 0.25;
-          if (document.getElementById('smog').checked) red += 0.15;
-          if (document.getElementById('green').checked) red += 0.10;
-
-          const aqi = Math.round((e / (w * 0.4)) * (1 - red));
-          document.getElementById('aqiNum').innerText = aqi;
-
-          let colorStr, status, statusCol;
-          if (aqi > 350) { colorStr = '#7e0023'; status = 'SEVERE'; statusCol = '#ffffff'; }
-          else if (aqi > 200) { colorStr = '#ff0000'; status = 'POOR'; statusCol = '#ffffff'; }
-          else { colorStr = '#ffcc00'; status = 'MODERATE'; statusCol = '#000000'; }
-
-          const tag = document.getElementById('aqiStatus');
-          tag.innerText = status;
-          tag.style.background = colorStr;
-          tag.style.color = statusCol;
-          document.getElementById('aqiNum').style.color = colorStr;
-
-          viewer.scene.fog.density = (aqi / 1000) * 0.0012;
-          viewer.scene.fog.color = Cesium.Color.fromCssColorString(aqi > 300 ? '#4b3621' : '#c0b0a0');
-
-          // THE FIX: Explicitly cast ${height} to Number and check for undefined
-          buildings.style = new Cesium.Cesium3DTileStyle({
-            color: {
-              conditions: [
-                ['${height} === undefined || ${height} === null', "color('white', 0.5)"],
-                ['Number(${height}) > 40', `color('${colorStr}', 0.8)`],
-                ['Number(${height}) > 20', `color('${colorStr}', 0.6)`],
-                ['true', "color('white', 0.5)"]
-              ]
-            }
-          });
-        };
-
-        document.querySelectorAll('input').forEach(i => i.onchange = update);
-        document.querySelectorAll('input[type=range]').forEach(i => i.oninput = update);
-        update();
-
-      } catch (err) { console.error("Sim Error:", err); }
+      updateSim();
     }
     start();
   </script>
